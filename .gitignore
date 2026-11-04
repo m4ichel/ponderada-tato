@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Saídas geradas pela opção --log
+*.log
+saida-*.txt
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+.claude/
+
+# Enunciado local da atividade (não faz parte da entrega: a raiz só tem README, .gitignore e ponderada/)
+descricao-atividade.md
