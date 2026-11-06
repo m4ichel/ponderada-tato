@@ -65,7 +65,7 @@ conferindo por partes:
   total:  0,975 + 3,250            = 4,225 ms
 ```
 
-Com o DSP, o speedup global é de 1,92 vezes e o tempo cai para 4,225 ms. **Agora a H atende**, com folga de 0,775 ms (15,5%). Sem sistema operacional, esse também é o pior caso.
+Com o DSP, o speedup global é de 1,92 vezes e o tempo cai para 4,225 ms. **Agora a H atende**, com folga de 0,775 ms (15,5%). No modelo do enunciado, esse também é o pior caso.
 
 | Cenário | Tempo por amostra | Atende 5 ms? | Folga |
 | :-- | --: | :-: | --: |
@@ -86,18 +86,18 @@ Com o DSP, o speedup global é de 1,92 vezes e o tempo cai para 4,225 ms. **Agor
 
 #### A1.5 Evidência da minha máquina
 
-![Caches do processador do meu computador](img/a1-caches.png)
+![Quadro Cache da aba CPU do CPU-Z 3.02 no meu computador](img/a1-caches.png)
 
-O CPU-Z não está instalado nesta máquina, então tirei a mesma informação do próprio Windows, pela classe `Win32_CacheMemory`, que lê as tabelas SMBIOS do firmware (o comando aparece no print). O processador é um Intel Core Ultra 7 255HX, com 20 núcleos sem hyper-threading, 8 de desempenho (P) e 12 de eficiência (E), e o print traz um bloco de caches para cada tipo de núcleo. Os tamanhos dizem qual bloco é qual. A L1 de instruções soma 512 KB no primeiro bloco e 768 KB no segundo, e 512 ÷ 8 = 768 ÷ 12 = 64 KB por núcleo, o valor que a Intel informa para os dois tipos. Então o primeiro bloco é dos 8 núcleos P e o segundo, dos 12 núcleos E.
+O print é do CPU-Z 3.02, a versão atual. Nela não existe mais uma aba Caches separada, e as caches aparecem no quadro Cache da aba CPU, que é o que o print mostra. O processador é um Intel Core Ultra 7 255HX, com 8 núcleos de desempenho (P) e 12 de eficiência (E), sem hyper-threading ("Cores 8P + 12E" e "Threads 20" no print).
 
-| Cache | Tipo | Núcleos P (8) | Núcleos E (12) |
+| Cache | Linha do print | Por núcleo P (8) | Por núcleo E (12) |
 | :-- | :-- | :-- | :-- |
-| L1 | Dados | 384 KB ÷ 8 = 48 KB por núcleo | 384 KB ÷ 12 = 32 KB por núcleo |
-| L1 | Instruções | 512 KB ÷ 8 = 64 KB por núcleo | 768 KB ÷ 12 = 64 KB por núcleo |
-| L2 | Unificada | 24.576 KB ÷ 8 = 3 MB por núcleo | 12.288 KB ÷ 3 = 4 MB por grupo de 4 núcleos |
-| L3 | Unificada | 30 MB compartilhados pelos 20 núcleos | (mesma L3) |
+| L1 de dados | L1 Data: 8 x 48 KB + 12 x 32 KB | 48 KB | 32 KB |
+| L1 de instruções | L1 Inst.: 8 x 64 KB + 12 x 64 KB | 64 KB | 64 KB |
+| L2 (unificada) | Level 2: 8 x 3 MB + 3 x 4 MB | 3 MB | 4 MB por grupo de 4 núcleos |
+| L3 (unificada) | Level 3: 30 MBytes | 30 MB compartilhados pelos 20 núcleos | (mesma L3) |
 
-**Sim, a minha L1 é dividida em instruções e dados** (linhas "L1 Cache / Dados" e "L1 Cache / Instruções" do print). **Mesmo assim, o computador é Von Neumann.** Programa e dados ficam na mesma RAM, no mesmo espaço de endereçamento. O sistema operacional carrega um programa lendo o executável como dado, e L2, L3 e RAM são unificadas. A separação existe só no primeiro nível, arranjo que se chama Harvard modificada. Com L1i e L1d separadas, o núcleo busca uma instrução e acessa um dado no mesmo ciclo, e os estágios IF e MEM do pipeline da A2 trabalham juntos sem conflito estrutural. Isso atenua o gargalo de Von Neumann sem mudar o modelo de memória.
+**Sim, a minha L1 é dividida em instruções e dados** (linhas "L1 Data" e "L1 Inst." do print). **Mesmo assim, o computador é Von Neumann.** Programa e dados ficam na mesma RAM, no mesmo espaço de endereçamento. O sistema operacional carrega um programa lendo o executável como dado, e L2, L3 e RAM são unificadas. A separação existe só no primeiro nível, arranjo que se chama Harvard modificada. Com L1i e L1d separadas, o núcleo busca uma instrução e acessa um dado no mesmo ciclo, e os estágios IF e MEM do pipeline da A2 trabalham juntos sem conflito estrutural. A divisão atenua o gargalo de Von Neumann sem mudar o modelo de memória.
 
 ---
 
@@ -192,7 +192,7 @@ I7  addi x11, x11, 4
 | I6 `addi x10, x10, 4` |  |  |  |  |  | IF | ID | EX | MEM | WB |  |
 | I7 `addi x11, x11, 4` |  |  |  |  |  |  | IF | ID | EX | MEM | WB |
 
-**Novo total: 11 ciclos, sem nenhuma bolha** (5 + 7 − 1). A troca também respeita as dependências que não causam bolha, mas limitam a reordenação. As WAR I1 → I6 (x10) e I3 → I7 (x11) continuam valendo, porque cada ponteiro só avança depois de usado, e a WAW I2 → I4 (x6) segue na ordem que deixa a soma final em x6.
+**Novo total: 11 ciclos, sem nenhuma bolha** (5 + 7 − 1). A troca também respeita as dependências que não causam bolha, mas limitam a reordenação. As WAR I1 → I6 (x10) e I3 → I7 (x11) continuam valendo, porque cada ponteiro só avança depois de usado. A WAW I2 → I4 (x6) também se mantém, então x6 termina com o valor de I4.
 
 | Cenário | Ciclos | Bolhas |
 | :-- | :-: | :-: |
@@ -239,11 +239,11 @@ flowchart TB
 | Acionar o motor | thread do `tato-core` | recebe a intensidade pela memória compartilhada, dentro dos 5 ms |
 | BLE (log e comandos) | processo `tato-ble` | fala com o mundo de fora, não é tempo real e pode cair sem parar a vibração |
 
-- **Compartilhamento de memória.** Sensor, processamento e motor trocam 100 amostras por segundo e têm 5 ms para tudo. Como threads do mesmo processo, eles enxergam o mesmo espaço de endereçamento, e passar uma amostra é escrever num buffer circular protegido por semáforos (o da A4), sem cópia e sem passar pelo kernel no caminho rápido. O BLE só precisa de uma cópia do log e recebe poucos comandos. Alguns microssegundos de IPC (socket Unix ou fila de mensagens POSIX) não pesam, e o log pode atrasar sem prejuízo para quem usa a pulseira.
+- **Compartilhamento de memória.** Sensor, processamento e motor trocam 100 amostras por segundo e têm 5 ms para tudo. Como threads do mesmo processo, eles enxergam o mesmo espaço de endereçamento. Passar uma amostra é só escrever no buffer circular da A4, protegido por semáforos, sem cópia e sem passar pelo kernel no caminho rápido. O BLE só precisa de uma cópia do log e recebe poucos comandos. Alguns microssegundos de IPC (socket Unix ou fila de mensagens POSIX) não pesam, e o log pode atrasar sem prejuízo para quem usa a pulseira.
 - **Custo de criação e de troca de contexto.** Criar uma thread (`clone` compartilhando a memória) é mais barato que criar um processo (`fork`, com tabelas de páginas novas). Só que tudo é criado uma vez, no boot. O custo que importa é o da troca de contexto, que acontece várias vezes por amostra, 100 vezes por segundo. Entre threads do mesmo processo o espaço de endereçamento não muda; entre processos ele muda (tabelas de páginas, TLB). Por isso as três tarefas críticas ficam como threads, e o BLE, acordado raramente, pode ser processo.
 - **Isolamento de falhas.** Uma falha grave (segfault) em qualquer thread derruba o processo inteiro. Sensor, processamento e motor são código pequeno, nosso e testado, e já dependem uns dos outros. Se um deles morre, a pulseira para de qualquer jeito. A pilha BLE é grande, recebe dados de fora e lida com reconexões e timeouts. Como processo separado, se ela travar ou cair, o supervisor (systemd) a reinicia e a vibração continua.
 
-Eu não separaria tudo em processos porque cada amostra passaria por dois canais de IPC, com cópias, chamadas ao kernel e trocas de espaço de endereçamento. Isso traz mais latência e mais variação de latência, num orçamento que, no pior caso da A1, já não fecha. Também não deixaria o BLE como thread, pelo motivo da A3.2.
+Eu não separaria tudo em processos porque cada amostra passaria por dois canais de IPC, com cópias, chamadas ao kernel e trocas de espaço de endereçamento. A latência e a variação dela aumentariam num orçamento que, no pior caso da A1, já não fecha. Também não deixaria o BLE como thread, pelo motivo da A3.2.
 
 > Observação: no `tato-core`, as três threads rodariam em `SCHED_FIFO`, com o sensor na maior prioridade, e com `mlockall()` para não haver falta de página no caminho crítico. O `tato-ble` fica com a prioridade normal do Linux.
 
@@ -257,7 +257,7 @@ Eu não separaria tudo em processos porque cada amostra passaria por dois canais
 | Se o ataque só derrubar o BLE | cai o processo inteiro e a pulseira para de vibrar | cai só o BLE; o supervisor o reinicia e a vibração continua |
 | Para chegar ao `tato-core` | não precisa de mais nada | precisa de uma segunda falha, no código do `tato-core` que trata o IPC ou no kernel |
 
-Como thread, uma única falha no código mais exposto do sistema entrega o controle da função de segurança da pulseira. Como processo, o estrago fica contido a "log e configuração não funcionam", e o atacante ainda precisa vencer uma segunda barreira (defesa em profundidade, menor privilégio). O risco que sobra é um comando malicioso, porém bem formado. Por isso o `tato-core` impõe limites que o BLE não consegue mudar, como uma intensidade mínima de vibração e nenhum comando capaz de desligar o aviso de obstáculo, e só aceita comandos de um celular pareado e autenticado.
+Como thread, uma única falha no código mais exposto do sistema entrega o controle da função de segurança da pulseira. Como processo, o estrago fica contido a "log e configuração não funcionam", e o atacante ainda precisa vencer uma segunda barreira (defesa em profundidade, menor privilégio). O risco que sobra é um comando malicioso, porém bem formado. Por isso o `tato-core` impõe limites que o BLE não consegue mudar, como uma intensidade mínima de vibração e nenhum comando capaz de desligar o aviso de obstáculo. Ele também só aceita comandos de um celular pareado e autenticado.
 
 #### A3.3 Diagrama de estados de um processo
 
@@ -273,7 +273,7 @@ stateDiagram-v2
     Terminado --> [*]
 ```
 
-**A thread do sensor passa a maior parte do tempo em Bloqueado (Esperando).** Ela é periódica. A cada 10 ms acorda pelo timer, dispara a leitura no I2C, dorme de novo esperando a interrupção de fim da transferência, coloca a amostra no buffer e volta a dormir até o próximo período. Com uma hipótese realista (I2C a 400 kHz, leitura de 2 bytes ≈ 5 bytes no barramento × 9 bits ÷ 400 kHz ≈ 0,11 ms, tempo em que ela também está bloqueada esperando o hardware), a thread usa a CPU por algumas dezenas de microssegundos a cada 10 ms. Isso dá menos de 1% do tempo em Executando e mais de 98% em Bloqueado. Ela só passa por Pronto entre ser acordada e ser escalonada, normalmente por microssegundos, já que tem a maior prioridade. Os até 3 ms de atraso do Linux na A1 são o tempo que ela pode ficar presa em Pronto sem receber a CPU.
+**A thread do sensor passa a maior parte do tempo em Bloqueado (Esperando).** Como é periódica, ela acorda pelo timer a cada 10 ms e dispara a leitura no I2C. Depois dorme esperando a interrupção de fim da transferência, coloca a amostra no buffer e volta a dormir até o próximo período. Com I2C a 400 kHz, a leitura de 2 bytes ocupa uns 5 bytes no barramento e leva 5 × 9 bits ÷ 400 kHz ≈ 0,11 ms. Nesse tempo a thread também fica bloqueada, esperando o hardware. No total, ela usa a CPU por algumas dezenas de microssegundos a cada 10 ms, o que dá menos de 1% do tempo em Executando e mais de 98% em Bloqueado. Por Pronto ela só passa entre ser acordada e ser escalonada, normalmente por microssegundos, já que tem a maior prioridade. Os até 3 ms de atraso do Linux na A1 são o tempo que ela pode ficar presa em Pronto sem receber a CPU.
 
 ---
 
@@ -295,7 +295,9 @@ O comando de cada versão está no [README](../README.md), e cada um faz sozinho
 - duplicadas = leituras de uma amostra que o motor já tinha recebido;
 - travou = o motor ficou 1 s sem receber nada, e o watchdog encerrou a execução.
 
-Vale a identidade consumidas = (20.000 − perdidas) + duplicadas. No CPython, uma espera ocupada só solta o GIL quando o interpretador força a troca de thread, a cada 5 ms. Por isso o [`comum.py`](codigo/comum.py) baixa esse intervalo para 0,5 ms nas três versões, como faria o escalonador de um SO. Com o intervalo padrão, uma execução de 20.000 amostras da versão 1 levou 196 s (3 min 16 s) na minha máquina, contra cerca de 1 s com o ajuste.
+As três contagens fecham pela identidade consumidas = (20.000 − perdidas) + duplicadas.
+
+No CPython, uma espera ocupada só solta o GIL quando o interpretador força a troca de thread, a cada 5 ms. Por isso o [`comum.py`](codigo/comum.py) baixa esse intervalo para 0,5 ms nas três versões, como faria o escalonador de um SO. Com o intervalo padrão, uma execução de 20.000 amostras da versão 1 levou 196 s (3 min 16 s) na minha máquina, contra cerca de 1 s com o ajuste.
 
 #### Resultados (3 execuções de cada versão, 20.000 amostras, N = 6)
 
@@ -348,10 +350,10 @@ contador = lido + 1                          contador = lido - 1
 | 3 | `contador = 3 + 1` | `sleep(0)`, perde a CPU | 4 | 3 |
 | 4 | | `contador = 3 − 1` | 2 | 3 |
 
-Depois de uma escrita e uma leitura, o contador deveria continuar em 3, mas ficou em 2. O incremento se perdeu. O contador agora diz que há menos amostras do que há, então o sensor acha que tem vaga com o buffer já cheio e sobrescreve uma posição que o motor ainda não leu, e essa amostra se perde. Se os passos 3 e 4 acontecem na ordem inversa, o contador fica em 4 com só 3 amostras e o decremento se perde. O motor acha que há amostra nova e relê uma posição já lida, e a amostra sai duplicada. A diferença entre contador e realidade se acumula a cada atualização perdida, e as execuções mostraram isso.
+Depois de uma escrita e uma leitura, o contador deveria continuar em 3, mas ficou em 2, porque o incremento se perdeu. Agora ele diz que há menos amostras do que há. O sensor acha que tem vaga com o buffer já cheio e sobrescreve uma posição que o motor ainda não leu, e essa amostra se perde. Se os passos 3 e 4 acontecem na ordem inversa, o contador fica em 4 com só 3 amostras e o decremento se perde. O motor acha que há amostra nova e relê uma posição já lida, e a amostra sai duplicada. A diferença entre contador e realidade se acumula a cada atualização perdida, e as execuções mostraram isso.
 
 - Cerca de 1 em cada 6 amostras se perdeu (3.141 a 3.727 de 20.000), e o motor recebeu de 2.062 a 3.141 leituras repetidas, ou seja, vibrou por uma distância velha.
-- Nas execuções 1 e 2, os incrementos perdidos levaram o contador a 0 cedo demais. Com o sensor já encerrado, nada mais o corrige, e o motor ficou preso em `while contador == 0` esperando amostras que nunca iam chegar. A execução travou.
+- Nas execuções 1 e 2, os incrementos perdidos levaram o contador a 0 cedo demais. Com o sensor já encerrado, nada mais o corrige, e o motor ficou preso em `while contador == 0` esperando amostras que nunca iam chegar, até o watchdog declarar o travamento.
 - Na execução 3 predominaram os decrementos perdidos. O motor completou 20.000 leituras, mas 3.141 delas eram repetidas, e o sensor terminou parado com o contador em 6 (= N), achando que o buffer estava cheio. O resultado muda a cada execução, como é típico de condição de corrida.
 
 #### O que cada semáforo garante na versão 2
@@ -447,12 +449,12 @@ Sem posse e espera, as setas "pede" do grafo nunca saem de uma thread que já se
 
 *Para quem usa a pulseira:* o congelamento por essa causa deixa de existir. Um comando de configuração passa a valer alguns milissegundos depois, entre duas amostras, algo imperceptível. O barramento I2C fica preso por menos tempo, e a latência do sensor fica mais previsível. O custo é da empresa, que precisa reescrever e testar (os 2 meses do Dilema 1).
 
-**Correção 2: detecção e recuperação (watchdog).** Cada thread atualiza um contador de batimento (heartbeat) a cada volta. Uma thread supervisora, de prioridade máxima e que não usa nenhum dos três semáforos, confere a cada 10 ms. Se a `thread_sensor` passar 50 ms (5 períodos) sem produzir amostra, ou se um heartbeat parar, ela declara deadlock. Dá para confirmar montando o grafo de espera a partir dos donos de cada semáforo e procurando um ciclo. A recuperação vai em degraus.
+**Correção 2: detecção e recuperação (watchdog).** Cada thread atualiza um contador de batimento (heartbeat) a cada volta. Uma thread supervisora, de prioridade máxima e que não usa nenhum dos três semáforos, confere a cada 10 ms. Se a `thread_sensor` passar 50 ms (5 períodos) sem produzir amostra, ou se um heartbeat parar, ela declara deadlock. Dá para confirmar montando o grafo de espera a partir dos donos de cada semáforo e procurando um ciclo. Confirmado o deadlock, a recuperação segue dois degraus:
 
 - (a) A supervisora cancela a vítima menos importante, a `thread_log`, e a recria. Cancelar uma thread não devolve os semáforos que ela segura, então a `thread_log` registra um cleanup handler (`pthread_cleanup_push`) que faz V() no que estiver com ela. O trecho de log em andamento pode ficar corrompido, mas a vibração volta em dezenas de milissegundos.
 - (b) Se não resolver, o watchdog de hardware deixa de ser alimentado e reinicia a pulseira. São cerca de 4 s sem vibração, avisados por um pulso longo, como no Dilema 1.
 
-*Para quem usa a pulseira:* o travamento continua acontecendo (cerca de 1 vez a cada 10.000 horas de uso), mas dura no máximo 50 ms mais a recuperação, ou uns 4 s no caso do reinício, em vez de "até desligar e ligar". A pessoa é avisada de que a pulseira está momentaneamente cega. É a correção rápida (semanas, não meses), mas não remove a causa e serve como rede de segurança junto com a correção 1.
+*Para quem usa a pulseira:* o travamento continua acontecendo, cerca de 1 vez a cada 10.000 horas de uso. Só que agora ele dura no máximo 50 ms mais a recuperação, ou uns 4 s no caso do reinício, e não até alguém desligar e ligar a pulseira. A pessoa é avisada de que a pulseira está momentaneamente cega. É a correção rápida (semanas, não meses), mas não remove a causa e serve como rede de segurança junto com a correção 1.
 
 ---
 
@@ -470,4 +472,4 @@ Sem posse e espera, as setas "pede" do grafo nunca saem de uma thread que já se
 
 **Impacto em quem usa e risco de segurança.** A vibração chega sem os soluços de até 3 ms do Linux. Sem SO, o deadlock da A5 não se repete nessa forma, mas as interrupções (timer, I2C, BLE) ainda concorrem com o laço principal e pedem seções críticas curtas. A superfície de ataque encolhe: sem Linux, rede ou OTA, sobra o BLE, e gravar firmware exige acesso físico. O risco que aceitamos é o inverso: uma falha descoberta no BLE fica aberta até cada pulseira passar pela assistência. Para conter isso, o protocolo BLE é mínimo (log de saída e poucos comandos com faixas validadas), com pareamento autenticado, firmware assinado e nenhum comando capaz de desligar o aviso de obstáculo.
 
-**O que me faria mudar de ideia.** Refaço a decisão se o protótipo da H, com BLE e log ativos, passar de 5 ms no pior caso: as interrupções do BLE rodam no mesmo núcleo e comem parte da folga de 0,775 ms. Também refaço se o DSP acelerar o nosso filtro menos de 2,79 vezes, porque aí a H estoura os 5 ms. E migro para a V, para ter OTA, se ela medir latência máxima de até 2,4 ms com kernel PREEMPT_RT num teste de 72 horas (cyclictest com BLE e log ativos). Nesse caso, o pior caso dela cai para 2,08 + 2,4 = 4,48 ms, com 10% de folga.
+**O que me faria mudar de ideia.** Refaço a decisão se o protótipo da H, com BLE e log ativos, passar de 5 ms no pior caso. As interrupções do BLE rodam no mesmo núcleo e comem parte da folga de 0,775 ms. Também refaço se o DSP acelerar o nosso filtro menos de 2,79 vezes, porque aí a H estoura os 5 ms. E migro para a V, para ter OTA, se ela medir latência máxima de até 2,4 ms com kernel PREEMPT_RT num teste de 72 horas (cyclictest com BLE e log ativos). Nesse caso, o pior caso dela cai para 2,08 + 2,4 = 4,48 ms, com 10% de folga.

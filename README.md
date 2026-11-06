@@ -61,3 +61,7 @@ Opções (todas opcionais, iguais nas três versões):
 | `--log ARQUIVO` | (nenhum) | também grava a saída num arquivo de texto |
 
 Exemplo: `python3 ponderada/codigo/versao1.py --execucoes 5 --log saida-v1.txt`.
+
+## Uso de IA
+
+O Claude Code (Anthropic) foi usado como apoio na escrita do código da A4 e na revisão do texto do relatório.
